@@ -25,11 +25,18 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         build-essential \
         cmake \
         cuda-command-line-tools-$(cut -f1,2 -d- <<< ${CUDA//./-}) \
+        curl \
         git \
+        gzip \
         hmmer \
         kalign \
+        screen \
+        ssh \
+        tcsh \
+        tmux \
         tzdata \
         wget \
+        zip \
     && rm -rf /var/lib/apt/lists/*
 
 # Compile HHsuite from source.
@@ -52,6 +59,7 @@ RUN wget -q -P /tmp \
 ENV PATH="/opt/conda/bin:$PATH"
 RUN conda update -qy conda \
     && conda install -y -c conda-forge \
+      numpy=1.19.5 \
       openmm=7.5.1 \
       cudatoolkit==${CUDA_VERSION} \
       pdbfixer \
@@ -68,11 +76,37 @@ RUN pip3 install --upgrade pip \
     && pip3 install --upgrade \
       jax==0.2.14 \
       jaxlib==0.1.69+cuda$(cut -f1,2 -d. <<< ${CUDA} | sed 's/\.//g') \
-      -f https://storage.googleapis.com/jax-releases/jax_releases.html
+      -f https://storage.googleapis.com/jax-releases/jax_releases.html \
+    && pip3 install py3Dmol
 
 # Apply OpenMM patch.
 WORKDIR /opt/conda/lib/python3.7/site-packages
 RUN patch -p0 < /app/alphafold/docker/openmm.patch
+
+# Install Phenix dependencies
+RUN conda install -y -c conda-forge \
+      boost=1.74 \
+      future \
+      hdf5=1.10 \
+      libtiff \
+      matplotlib \
+      mrcfile \
+      msgpack-c \
+      psutil \
+      pybind11 \
+      scipy=1.7.0 \
+      scons \
+      setuptools=59
+
+# Clean up conda packages
+RUN conda clean -y --all
+
+# Enable ssh
+# https://web.archive.org/web/20150215051915/https://docs.docker.com/examples/running_ssh_service/
+RUN mkdir /var/run/sshd \
+    && echo 'root:password' | chpasswd \
+    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
+    && sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
 # Add SETUID bit to the ldconfig binary so that non-root users can run it.
 RUN chmod u+s /sbin/ldconfig.real
@@ -82,9 +116,17 @@ RUN chmod u+s /sbin/ldconfig.real
 # details.
 # ENTRYPOINT does not support easily running multiple commands, so instead we
 # write a shell script to wrap them up.
-WORKDIR /app/alphafold
-RUN echo $'#!/bin/bash\n\
-ldconfig\n\
-python /app/alphafold/run_alphafold.py "$@"' > /app/run_alphafold.sh \
-  && chmod +x /app/run_alphafold.sh
-ENTRYPOINT ["/app/run_alphafold.sh"]
+WORKDIR /app
+RUN ldconfig
+# RUN echo $'#!/bin/bash\n\
+# ldconfig\n\
+# python /app/alphafold/run_alphafold.py "$@"' > /app/run_alphafold.sh \
+#   && chmod +x /app/run_alphafold.sh
+# ENTRYPOINT ["/app/run_alphafold.sh"]
+
+# start sshd with environment variables
+# ENV NOTVISIBLE "in users profile"
+# RUN echo "export VISIBLE=now" >> /etc/profile
+
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
