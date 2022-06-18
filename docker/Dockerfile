@@ -86,6 +86,7 @@ RUN patch -p0 < /app/alphafold/docker/openmm.patch
 # Install Phenix dependencies
 RUN conda install -y -c conda-forge \
       boost=1.74 \
+      flask \
       future \
       hdf5=1.10 \
       libtiff \
@@ -96,7 +97,8 @@ RUN conda install -y -c conda-forge \
       pybind11 \
       scipy=1.7.0 \
       scons \
-      setuptools=59
+      setuptools=59 \
+      pyzmq
 
 # Clean up conda packages
 RUN conda clean -y --all
@@ -128,5 +130,8 @@ RUN ldconfig
 # ENV NOTVISIBLE "in users profile"
 # RUN echo "export VISIBLE=now" >> /etc/profile
 
-EXPOSE 22
+EXPOSE 22 8000
 CMD ["/usr/sbin/sshd", "-D"]
+
+# EXPOSE 8000
+# CMD ["/app/phenix/build/bin/phenix.rest_server", "--working-dir", "/app/results/rest"]
