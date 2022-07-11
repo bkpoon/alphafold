@@ -30,6 +30,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         gzip \
         hmmer \
         kalign \
+        locales \
         screen \
         ssh \
         tcsh \
@@ -37,6 +38,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         tzdata \
         wget \
         zip \
+    && locale-gen en_US.UTF-8 en_GB.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
 # Compile HHsuite from source.
