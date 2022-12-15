@@ -105,6 +105,14 @@ RUN conda install -y -c conda-forge \
 # Clean up conda packages
 RUN conda clean -y --all
 
+# Install mmseqs
+# https://github.com/soedinglab/mmseqs2
+ENV PATH="/app/mmseqs/bin:$PATH"
+RUN cd /app \
+    && wget https://mmseqs.com/latest/mmseqs-linux-avx2.tar.gz \
+    && tar xvfz mmseqs-linux-avx2.tar.gz \
+    && rm -f mmseqs-linux-avx2.tar.gz
+
 # Enable ssh
 # https://web.archive.org/web/20150215051915/https://docs.docker.com/examples/running_ssh_service/
 RUN mkdir /var/run/sshd \
