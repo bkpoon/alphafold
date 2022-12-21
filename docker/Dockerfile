@@ -30,6 +30,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         gzip \
         hmmer \
         kalign \
+        libapr1 \
+        libaprutil1 \
         locales \
         screen \
         ssh \
